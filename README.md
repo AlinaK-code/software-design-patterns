@@ -23,16 +23,16 @@ docker-compose exec web python manage.py migrate
 ```
 
 Для остановки логов: Ctrl + C (просто два раза вводим, может подлагивать)  
-Файлы Dockerfile и docker-compose.yml настроила, просьба их не трогать :)  
-Главная страница доступна по адресу:  
+Файлы Dockerfile и docker-compose.yml настроила, просьба их не трогать :) 
+
+### Главная страница доступна по адресу:  
 ```bash
 http://localhost:8000/
 ```  
-Админка:  
+### Админка:  
 ```bash
 http://localhost:8000/admin
 ```
-
 
 Создано командой:
 1. Алина Каматали
