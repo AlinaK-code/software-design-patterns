@@ -1,0 +1,43 @@
+{% extends "core/base.html" %}
+
+{% block title %}События — Умный дом{% endblock %}
+
+{% block content %}
+<h1 class="page-title">Журнал событий</h1>
+
+{% if no_data %}
+<div class="alert">
+  Демо-данные не найдены. Запустите:
+  <code>python manage.py seed_smart_home</code>
+</div>
+{% else %}
+<p class="page-subtitle">Дом: {{ home.name }} — последние 50 событий</p>
+
+<div class="table-wrap">
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Дата</th>
+        <th>Тип</th>
+        <th>Устройство</th>
+        <th>Сообщение</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for event in events %}
+      <tr>
+        <td>{{ event.created_at|date:"d.m.Y H:i:s" }}</td>
+        <td><span class="badge badge-{{ event.event_type }}">{{ event.get_event_type_display }}</span></td>
+        <td>{{ event.device.name|default:"—" }}</td>
+        <td>{{ event.message }}</td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="4">Событий пока нет.</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+{% endblock %}

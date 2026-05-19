@@ -1,0 +1,141 @@
+{% extends "core/base.html" %}
+
+{% block title %}Главная — Умный дом{% endblock %}
+
+{% block content %}
+<h1 class="page-title">Панель управления</h1>
+
+{% if no_data %}
+<div class="alert">
+  Демо-данные не найдены. Запустите:
+  <code>python manage.py seed_smart_home</code>
+</div>
+{% else %}
+<p class="page-subtitle">{{ home.name }}{% if home.address %} — {{ home.address }}{% endif %}</p>
+
+<div class="card-grid">
+  <div class="card card-stat">
+    <div class="stat-value">{{ controller_summary.rooms }}</div>
+    <div class="stat-label">Комнат (Singleton)</div>
+  </div>
+  <div class="card card-stat">
+    <div class="stat-value">{{ controller_summary.devices }}</div>
+    <div class="stat-label">Устройств</div>
+  </div>
+  <div class="card card-stat">
+    <div class="stat-value">{{ active_devices_count }}</div>
+    <div class="stat-label">Активных (Iterator)</div>
+  </div>
+  <div class="card card-stat">
+    <div class="stat-value">{{ total_power_watts }}</div>
+    <div class="stat-label">Вт суммарно (Composite)</div>
+  </div>
+</div>
+
+<section class="card strategy-block">
+  <h2 class="section-title">Режимы умного дома (Strategy)</h2>
+  <p class="device-meta">
+    Здесь используется паттерн Strategy: алгоритм поведения дома выбирается во время выполнения.
+  </p>
+  <div class="btn-group">
+    <form method="post" action="{% url 'apply_strategy' 'comfort' %}" class="inline-form">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-primary">Комфортный режим</button>
+    </form>
+    <form method="post" action="{% url 'apply_strategy' 'economy' %}" class="inline-form">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-secondary">Экономия энергии</button>
+    </form>
+    <form method="post" action="{% url 'apply_strategy' 'security' %}" class="inline-form">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-secondary">Режим безопасности</button>
+    </form>
+  </div>
+</section>
+
+<div class="card-grid">
+  <div class="card">
+    <h3 class="section-title">SmartHomeController</h3>
+    <p class="device-meta">Статус: {{ controller_status.controller }}, initialized={{ controller_status.initialized }}</p>
+    <p class="device-meta">Событий: {{ controller_summary.events }}, сценариев: {{ controller_summary.scenarios }}</p>
+  </div>
+  <div class="card">
+    <h3 class="section-title">Погода (Adapter)</h3>
+    <p class="device-meta">Температура: {{ environment.temperature }} °C</p>
+    <p class="device-meta">Влажность: {{ environment.humidity }} %</p>
+    <p class="device-meta">Источник: {{ environment.source }}</p>
+  </div>
+  <div class="card card-wide">
+    <h3 class="section-title">Активные устройства (Iterator)</h3>
+    {% if active_devices %}
+    <ul class="energy-devices">
+      {% for device in active_devices %}
+      <li>{{ device.name }} — {{ device.room.name }}</li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <p class="device-meta">Нет активных устройств</p>
+    {% endif %}
+  </div>
+</div>
+
+<div class="two-columns">
+  <section>
+    <h2 class="section-title">Энергопотребление (24 ч)</h2>
+    <div class="card">
+      <div class="energy-summary">
+        <div><strong>{{ energy_report.total_kwh }}</strong> kWh</div>
+        <div><strong>{{ energy_report.total_cost }}</strong> руб.</div>
+        <div>Тариф: {{ energy_report.tariff }} руб./kWh</div>
+      </div>
+      <ul class="energy-devices">
+        {% for item in energy_report.devices %}
+        <li>{{ item.name }}: {{ item.kwh }} kWh ({{ item.cost }} руб.)</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="section-title">Последние события</h2>
+    <div class="card">
+      {% if recent_events %}
+      <ul class="device-list-compact">
+        {% for event in recent_events %}
+        <li>
+          <span>{{ event.message|truncatechars:50 }}</span>
+          <span class="badge badge-{{ event.event_type }}">{{ event.get_event_type_display }}</span>
+        </li>
+        {% endfor %}
+      </ul>
+      <p style="margin-top:0.75rem"><a href="{% url 'events' %}">Все события</a></p>
+      {% else %}
+      <p class="page-subtitle">Событий пока нет.</p>
+      {% endif %}
+    </div>
+  </section>
+</div>
+
+<h2 class="section-title">Комнаты и устройства</h2>
+{% for room in rooms %}
+<div class="room-block">
+  <h3>{{ room.name }}</h3>
+  {% if room.devices.all %}
+  <ul class="device-list-compact">
+    {% for device in room.devices.all %}
+    <li>
+      <span>{{ device.name }}</span>
+      <span>
+        <span class="badge badge-{{ device.status }}">{{ device.get_status_display }}</span>
+        {{ device.power_watts }} Вт
+      </span>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="page-subtitle">Нет устройств</p>
+  {% endif %}
+</div>
+{% endfor %}
+{% endif %}
+{% endblock %}

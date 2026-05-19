@@ -1,0 +1,50 @@
+{% extends "core/base.html" %}
+
+{% block title %}Сценарии — Умный дом{% endblock %}
+
+{% block content %}
+<h1 class="page-title">Сценарии</h1>
+
+{% if no_data %}
+<div class="alert">
+  Демо-данные не найдены. Запустите:
+  <code>python manage.py seed_smart_home</code>
+</div>
+{% else %}
+<p class="page-subtitle">Дом: {{ home.name }}</p>
+
+{% for scenario in scenarios %}
+<article class="scenario-card">
+  <h2>{{ scenario.name }}</h2>
+  <p class="device-meta">{{ scenario.description|default:"Без описания" }}</p>
+  <p>
+    {% if scenario.is_active %}
+    <span class="badge badge-on">Активен</span>
+    {% else %}
+    <span class="badge badge-off">Неактивен</span>
+    {% endif %}
+  </p>
+
+  <h3 class="section-title">Действия</h3>
+  <ol class="scenario-actions">
+    {% for action in scenario.actions.all %}
+    <li>
+      #{{ action.order }} — {{ action.device.name }}:
+      {{ action.get_command_display }}
+      {% if action.value %}(value: {{ action.value }}){% endif %}
+    </li>
+    {% empty %}
+    <li>Нет действий</li>
+    {% endfor %}
+  </ol>
+
+  <form method="post" action="{% url 'run_scenario' scenario.id %}">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-primary">Запустить сценарий</button>
+  </form>
+</article>
+{% empty %}
+<p class="page-subtitle">Сценарии не найдены.</p>
+{% endfor %}
+{% endif %}
+{% endblock %}

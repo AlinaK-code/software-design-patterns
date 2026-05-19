@@ -1,0 +1,27 @@
+{% extends "core/base.html" %}
+{% load core_extras %}
+
+{% block title %}Паттерны — Умный дом{% endblock %}
+
+{% block content %}
+<h1 class="page-title">Демонстрация паттернов</h1>
+
+{% if no_data %}
+<div class="alert">
+  Демо-данные не найдены. Запустите:
+  <code>python manage.py seed_smart_home</code>
+</div>
+{% else %}
+<p class="page-subtitle">Дом: {{ home.name }} — результаты run_patterns_demo()</p>
+
+<div class="pattern-grid">
+  {% for card in pattern_cards %}
+  <article class="card pattern-card">
+    <h3>{{ card.title }}</h3>
+    <p class="pattern-desc">{{ card.description }}</p>
+    <pre class="result-block">{{ card.data|pprint_value }}</pre>
+  </article>
+  {% endfor %}
+</div>
+{% endif %}
+{% endblock %}

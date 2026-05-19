@@ -1,0 +1,101 @@
+{% extends "core/base.html" %}
+
+{% block title %}Устройства — Умный дом{% endblock %}
+
+{% block content %}
+<h1 class="page-title">Устройства</h1>
+
+{% if no_data %}
+<div class="alert">
+  Демо-данные не найдены. Запустите:
+  <code>python manage.py seed_smart_home</code>
+</div>
+{% else %}
+<p class="page-subtitle">Дом: {{ home.name }}</p>
+
+<p class="device-meta state-intro">
+  State используется для обработки поведения устройства в зависимости от его текущего состояния:
+  включено, выключено, ошибка, обслуживание.
+</p>
+
+<section class="card factory-block">
+  <h2 class="section-title">Создать устройство через фабрику (Abstract Factory)</h2>
+  <p class="device-meta">Новое устройство добавляется в первую комнату дома.</p>
+  <div class="btn-group">
+    <form method="post" action="{% url 'factory_device_create' 'lighting' %}" class="inline-form">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-primary">Создать лампу</button>
+    </form>
+    <form method="post" action="{% url 'factory_device_create' 'climate' %}" class="inline-form">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-primary">Создать климатическое устройство</button>
+    </form>
+    <form method="post" action="{% url 'factory_device_create' 'security' %}" class="inline-form">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-primary">Создать устройство безопасности</button>
+    </form>
+  </div>
+</section>
+
+<div class="device-grid">
+  {% for item in device_items %}
+  {% with device=item.device %}
+  <article class="device-card">
+    <h3>{{ device.name }}</h3>
+    <div class="device-meta">
+      <span>Комната: {{ device.room.name }}</span>
+      <span>Тип: {{ device.get_device_type_display }}</span>
+      <span>
+        Статус:
+        <span class="badge badge-{{ device.status }}">{{ device.get_status_display }}</span>
+      </span>
+      <span>Значение: {{ device.value|default:"—" }}</span>
+      <span>Мощность: {{ device.power_watts }} Вт</span>
+    </div>
+
+    <p class="decorator-demo">
+      <strong>Decorator:</strong> {{ item.decorator_description }}
+    </p>
+
+    <p class="state-demo">
+      <strong>StateContext:</strong>
+      состояние «{{ item.state_report.state }}»,
+      статус в БД — {{ item.state_report.status }}
+      ({{ device.get_status_display }})
+    </p>
+
+    <p class="section-title" style="margin-top:0.75rem">Действия (Proxy + Command + State)</p>
+    <div class="btn-group">
+      {% for cap in device.capabilities.all %}
+        {% if cap.is_enabled %}
+          {% if cap.action_name in button_actions %}
+          <form method="post" action="{% url 'device_command' device.id %}" class="inline-form">
+            {% csrf_token %}
+            <input type="hidden" name="action_name" value="{{ cap.action_name }}">
+            <button type="submit" class="btn btn-primary btn-sm">
+              {{ cap.get_action_name_display }}
+            </button>
+          </form>
+          {% else %}
+          <form method="post" action="{% url 'device_command' device.id %}" class="inline-form">
+            {% csrf_token %}
+            <input type="hidden" name="action_name" value="{{ cap.action_name }}">
+            <input type="text" name="value" placeholder="value">
+            <button type="submit" class="btn btn-secondary btn-sm">
+              {{ cap.get_action_name_display }}
+            </button>
+          </form>
+          {% endif %}
+        {% endif %}
+      {% empty %}
+      <span class="device-meta">Нет доступных действий</span>
+      {% endfor %}
+    </div>
+  </article>
+  {% endwith %}
+  {% empty %}
+  <p class="page-subtitle">Устройства не найдены.</p>
+  {% endfor %}
+</div>
+{% endif %}
+{% endblock %}

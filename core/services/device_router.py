@@ -3,6 +3,13 @@ from __future__ import annotations
 from typing import Any
 
 from core.models import Device, DeviceAction, DeviceCapability, EventLog
+from core.services.states import DeviceStateContext
+
+STATE_ACTIONS = {
+    DeviceAction.TURN_ON,
+    DeviceAction.TURN_OFF,
+    DeviceAction.TOGGLE,
+}
 
 
 class DeviceRouter:
@@ -14,6 +21,24 @@ class DeviceRouter:
             action_name=action_name,
             is_enabled=True,
         ).exists()
+
+    def _execute_state_action(
+        self,
+        device: Device,
+        action_name: str,
+    ) -> dict[str, Any]:
+        context = DeviceStateContext(device)
+
+        if action_name == DeviceAction.TURN_ON:
+            return context.turn_on()
+        if action_name == DeviceAction.TURN_OFF:
+            return context.turn_off()
+        if action_name == DeviceAction.TOGGLE:
+            if device.status == Device.Status.ON:
+                return context.turn_off()
+            return context.turn_on()
+
+        return {"success": False, "message": "Неизвестное state-действие"}
 
     def execute_command(
         self,
@@ -45,17 +70,45 @@ class DeviceRouter:
             )
             return {"success": False, "message": message}
 
-        if action_name == DeviceAction.TURN_ON:
-            device.status = Device.Status.ON
-        elif action_name == DeviceAction.TURN_OFF:
-            device.status = Device.Status.OFF
-        elif action_name == DeviceAction.TOGGLE:
-            device.status = (
-                Device.Status.OFF
-                if device.status == Device.Status.ON
-                else Device.Status.ON
+        if action_name in STATE_ACTIONS:
+            state_result = self._execute_state_action(device, action_name)
+            device.refresh_from_db()
+
+            if not state_result.get("success"):
+                message = state_result.get("message", "Действие отклонено состоянием")
+                EventLog.objects.create(
+                    home=home,
+                    device=device,
+                    event_type=EventLog.EventType.ERROR,
+                    message=message,
+                )
+                return {
+                    "success": False,
+                    "device": device.name,
+                    "action": action_name,
+                    "value": value,
+                    "status": device.status,
+                    "message": message,
+                }
+
+            device.save()
+            message = state_result.get("message", "Команда выполнена")
+            EventLog.objects.create(
+                home=home,
+                device=device,
+                event_type=EventLog.EventType.COMMAND,
+                message=f"Команда {action_name} (State): {message}",
             )
-        elif value:
+            return {
+                "success": True,
+                "device": device.name,
+                "action": action_name,
+                "value": value,
+                "status": device.status,
+                "message": message,
+            }
+
+        if value:
             device.value = value
 
         device.save()

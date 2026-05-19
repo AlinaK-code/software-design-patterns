@@ -70,15 +70,37 @@ class ScenarioTemplate(ABC):
 
 
 class MorningScenarioRunner(ScenarioTemplate):
-    pass
+    def before_run(self) -> None:
+        super().before_run()
+        EventLog.objects.create(
+            home=self.scenario.home,
+            event_type=EventLog.EventType.SCENARIO,
+            message=(
+                "Подготовка утреннего сценария: мягкий свет и кухня"
+            ),
+        )
 
 
 class NightScenarioRunner(ScenarioTemplate):
-    pass
+    def before_run(self) -> None:
+        super().before_run()
+        EventLog.objects.create(
+            home=self.scenario.home,
+            event_type=EventLog.EventType.SCENARIO,
+            message=(
+                "Проверка безопасности перед переходом в ночной режим"
+            ),
+        )
 
 
 class EconomyScenarioRunner(ScenarioTemplate):
-    pass
+    def after_run(self) -> None:
+        super().after_run()
+        EventLog.objects.create(
+            home=self.scenario.home,
+            event_type=EventLog.EventType.SCENARIO,
+            message="Режим экономии энергии завершён",
+        )
 
 
 class DefaultScenarioRunner(ScenarioTemplate):
