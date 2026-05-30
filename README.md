@@ -2,10 +2,11 @@
 
 ## Запуск проекта
 
-### Сборка образа
+### Сборка проекта
 ```bash
 docker-compose up --build
 ```
+
 ### Чтобы остановить контейнер
 ```bash
 docker-compose down
